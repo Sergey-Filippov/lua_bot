@@ -3,7 +3,7 @@
 function OnInit()  -- Первичная инициализация данных
     Name_Bot = "Бот на скользящих средних"          -- Наименование робота
     Version = " 1.0"                                -- Номер версии бота
-    Sec_code = "CNYRUBF"                                   -- Наименование торгового тнструмента
+    Sec_code = ""                                   -- Наименование торгового тнструмента
     Class_code =  "SPBFUT"
     Client_code = "567250R7WF1"                     -- Код клиента
     Firmid = "MC0061900000"  
@@ -14,11 +14,11 @@ function OnInit()  -- Первичная инициализация данных
     Stop = "off"                                    -- Режим работы робота пауза/работа
     Depo = getMoney(Client_code, Firmid, Tag, Cur_code).money_limit_available  -- Депозит
     Interval_M60 = 60                                 -- 60  Минут
-    Interval_M15 = 15                                 -- 5 Мин
-    Interval_D1 = 1440                                -- Дневной интервал
-    Period_Slow = 26                                  -- Период сглаживания медленной EMA
-    Period_Fast = 12                                  -- Период сглаживания быстрой EMA
-    SDiapazon = 0                 
+    Interval_M15 = 15                                  -- 5 Мин
+    INTERVAL_D1 = 1440                            -- Дневной интервал
+    Period_Slow = 26                                -- Период сглаживания медленной EMA
+    Period_Fast = 12                                 -- Период сглаживания быстрой EMA
+    SDiapazon_H4 = 0                 
     Risk = 2
     Open_poz = 0                                        -- открытые позиции 
     log =  getScriptPath().."\\".."Save_one.txt"        -- Файл записи логов работы
@@ -44,7 +44,6 @@ function Log(str)                               -- Запись логов работы
        lg:flush() 
        lg:close()      
 end
-
 --------------------------------------------------------------------------------------
 function Sortirovka_selection()
 
@@ -114,33 +113,34 @@ sec_list = getClassSecurities(Class_code)
 end
 
 -----------------------------------------------------------------------------------
-function MACD_(Interval)
+function MACD_(Sec_code, Interval)
     Ema_Fast = {}
     Ema_Slow = {}
     MACD = {}
     DS, Error = CreateDataSource(Class_code, Sec_code, Interval)          -- Получение таблицы данных по D1
-    while (DS:Size() == nil or DS:Size() == 0) do                         -- Проверка получены ли данные
+    while (DS:Size() == nil or DS:Size() == 0) do                 -- Проверка получены ли данные
        if Error ~= nil or Error ~="" then 
-        message("Ошибка подключения к графику: "..Error)      
-    end
+        message("Ошибка подключения к графику: "..Error) 
+        break end
+     
           sleep(100)
         end
     
-    message(" Данные получены")
+    if DS ~= nil then message(" Данные получены") end
     DS:SetEmptyCallback()                                                     -- Подписка на автоматическое получение обновленных данных (Для D1 актуально?)
-    local Delita_Price = 0 
-    local High_price = 0
-    local Low_price = 0
+    local Delita_price = 0 
+    local Highprice = 0
+    local Lowprice = 0
     local Data = {}
-    local Candless = DS:Size()                 -- Кол-во свечей по которым получены данные
+    local Candles = DS:Size()                 -- Кол-во свечей по которым получены данные
     
     Ema_Slow[1] = DS:C(1) 
     Ema_Fast[1] = DS:C(1)
     local A_Fast = 2/(Period_Fast+1)
     local A_Slow = 2/(Period_Slow+1)
-    for i = 2, Candless do
-        High_price = DS:H(i)                   -- High
-        Low_price = DS:L(i)                    -- Low
+    for i = 2, Candles do
+        Highprice = DS:H(i)                   -- High
+        Lowprice = DS:L(i)                    -- Low
         Data = DS:T(i)
             Ema_Slow[i] = DS:C(i)
             Ema_Fast[i] = DS:C(i)
@@ -149,30 +149,29 @@ function MACD_(Interval)
            
             Ema_Fast[i] =  DS:C(i)*A_Fast + Ema_Fast[i-1]*(1 - A_Fast)    --Расчет быстрой EMA
            
-            Delita_Price = Delita_Price + math.abs(High_price -Low_price)    -- Расчет суммы всех дневных диапазонов
+            Delita_price = Delita_price + math.abs(Highprice -Lowprice)    -- Расчет суммы всех дневных диапазонов
+            Index = math.abs( Candles -(i + Period_Slow) )
        
-        if i >= Candless - Period_Slow then                                               --  Оставляем в памяти последние 22 значения
-            MACD[i-Period_Slow] = {}
-            MACD[i-Period_Slow].macd = tonumber(string.format("%.6f", (Ema_Fast[i] - Ema_Slow[i])))       -- Расчет MACD
-            MACD[i-Period_Slow].slow = tonumber(string.format("%.6f", Ema_Slow[i] ))
-            MACD[i-Period_Slow].fast = tonumber(string.format("%.6f", Ema_Fast[i] ))
-            MACD[i-Period_Slow].data =  Data
-           
+        if Index >=1 then                                               --  Оставляем в памяти последние 22 значения
+            MACD[Index] = {}
+            MACD[Index].macd = tonumber(string.format("%.6f", (Ema_Fast[i] - Ema_Slow[i])))       -- Расчет MACD
+            MACD[Index].slow = tonumber(string.format("%.6f", Ema_Slow[i] ))
+            MACD[Index].fast = tonumber(string.format("%.6f", Ema_Fast[i] ))
+            MACD[Index].data = tostring(Data.day..' число '..Data.month.." мес ")
+            Str = tostring(MACD[Index].data.." -дата и время".."\n"..
+            MACD[Index].macd.." - MACD  "..MACD[Index].fast.." - fast  "..MACD[Index].slow.." - slow")
+           Log(Str)
         end  
-        SDiapazon = Delita_Price/Candless                        -- Расчет среднедневного диапазона
-        return MACD, SDiapazon
+        SDiapazon = Delita_price/Candles                        -- Расчет среднедневного диапазона
     end
    
 end
-
 ------------------------------------------------------------------------------------------------------------
-function OnStop()                           -- Функция остановки бота по нажатию кнопки "Stop"
-    Log("Остановка скрипта - Stop")
-    is_run = false
-    
-    return 1000   
+function OnStop()                    -- Функция остановки бота по нажатию кнопки "Stop"
+    LogWrite("Остановка скрипта OnStop")
+    return 2000
 end
---------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
 
 function main()
     Sortirovka_selection()
@@ -183,12 +182,5 @@ function main()
          "\n".." Возможно купить или продать контрактов ".. Tabl_sort[i].can_buy_sell ) 
          sleep(200)
     end
-    MACD_(Interval_D1)
-    message(tostring(#MACD))
-    for i = 1, #MACD do
-        Str = tostring(MACD[i].data.day.." -дата и время".."\n"..
-        MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
-       Log(Str)
-    end
-    Log(SDiapazon)
+    MACD_("CNYRUBF",Interval_D1)
 end
