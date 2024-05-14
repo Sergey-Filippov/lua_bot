@@ -23,6 +23,7 @@ function OnInit()  -- Первичная инициализация данных
     Open_poz = 0                                        -- открытые позиции 
     log =  getScriptPath().."\\".."Save_one.txt"        -- Файл записи логов работы
     Tabl_sort = {}                                      -- Отсортированная таблица данных
+    MACD = {}
 end
 
 function Status() --Функция проверки состояния подключения 
@@ -101,7 +102,6 @@ sec_list = getClassSecurities(Class_code)
             i = i + 1
             Tabl_sort[i] = Tabl[n] 
             Tabl_sort[i].can_buy_sell = math.floor((tonumber(TABLE.can_sell) + tonumber(TABLE.can_buy))/2)
-            --message(Tabl_sort[i].fut.." Фьючерс "..Tabl_sort[i].val.." Оборот в деньгах ".."\n".." Возможно купить или продать контрактов ".. Tabl_sort[i].can_buy_sell ) 
         end
     end  
     Tabl = nil                                              -- Удаляем ненужную таблицу
@@ -114,10 +114,9 @@ end
 
 -----------------------------------------------------------------------------------
 function MACD_(Sec_code, Interval)
-    message(Sec_code.."  "..tostring(Interval_D1))
+   
     Ema_Fast = {}
     Ema_Slow = {}
-    MACD = {}
     DS, Error = CreateDataSource(Class_code, Sec_code, Interval)          -- Получение таблицы данных по D1
     while (DS:Size() == nil or DS:Size() == 0) do                 -- Проверка получены ли данные
        if Error ~= nil or Error ~="" then 
@@ -147,26 +146,20 @@ function MACD_(Sec_code, Interval)
             Ema_Fast[i] = DS:C(i)
           
             Ema_Slow[i] =  DS:C(i)*A_Slow + Ema_Slow[i-1]*(1 - A_Slow)    -- Расчет медленной EMA
-           
             Ema_Fast[i] =  DS:C(i)*A_Fast + Ema_Fast[i-1]*(1 - A_Fast)    --Расчет быстрой EMA
-           
             Delita_price = Delita_price + math.abs(Highprice -Lowprice)    -- Расчет суммы всех дневных диапазонов
-            Index = math.abs( Candles -(i + Period_Slow) )
-       
+            Index = (i + Period_Fast) - Candles
         if Index >=1 then                                               --  Оставляем в памяти последние 22 значения
             MACD[Index] = {}
             MACD[Index].macd = tonumber(string.format("%.6f", (Ema_Fast[i] - Ema_Slow[i])))       -- Расчет MACD
             MACD[Index].slow = tonumber(string.format("%.6f", Ema_Slow[i] ))
             MACD[Index].fast = tonumber(string.format("%.6f", Ema_Fast[i] ))
             MACD[Index].data = tostring(Data.day..' число '..Data.month.." мес ")
-            Str = tostring(MACD[Index].data.." -дата и время".."\n"..
-            MACD[Index].macd.." - MACD  "..MACD[Index].fast.." - fast  "..MACD[Index].slow.." - slow")
-           Log(Str)
         end  
-        SDiapazon = Delita_price/Candles                        -- Расчет среднедневного диапазона
-        return MACD, SDiapazon
+    
     end
-   
+    SDiapazon = Delita_price/(Candles-1)                       -- Расчет среднедневного диапазона
+    return MACD, SDiapazon
 end
 ------------------------------------------------------------------------------------------------------------
 function OnStop()                    -- Функция остановки бота по нажатию кнопки "Stop"
@@ -178,16 +171,16 @@ end
 function main()
     Sortirovka_selection()
     Log("Простой")
-    message(tostring(#Tabl_sort))
+   
     for i = 1, #Tabl_sort do
          Log(Tabl_sort[i].fut.." Фьючерс "..Tabl_sort[i].val.." Оборот в деньгах "..Tabl_sort[i].buy_go.." -Го на покупку"..Tabl_sort[i].sell_go.." -Го на продажу"..
          "\n".." Возможно купить или продать контрактов ".. Tabl_sort[i].can_buy_sell ) 
          sleep(200)
     end
-    MACD_("CNYRUBF",Interval_D1)
-    message(tostring(#MACD))
+    MACD_("CNYRUBF", Interval_D1)
+  
     for i = 1, #MACD do
-        Str = tostring(MACD[i].data.day.." -дата и время".."\n"..
+        Str = tostring(MACD[i].data.." -дата и время".."\n"..
         MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
        Log(Str)
     end
