@@ -15,7 +15,7 @@ function OnInit()  -- Первичная инициализация данных
     Depo = getMoney(Client_code, Firmid, Tag, Cur_code).money_limit_available  -- Депозит
     Interval_M60 = 60                                 -- 60  Минут
     Interval_M15 = 15                                  -- 5 Мин
-    INTERVAL_D1 = 1440                            -- Дневной интервал
+    Interval_D1 = 1440                            -- Дневной интервал
     Period_Slow = 26                                -- Период сглаживания медленной EMA
     Period_Fast = 12                                 -- Период сглаживания быстрой EMA
     SDiapazon_H4 = 0                 
@@ -63,7 +63,7 @@ sec_list = getClassSecurities(Class_code)
     for n = 1, #Tab_sec_list do
         param_day = getParamEx(Class_code, Tab_sec_list[n],"DAYS_TO_MAT_DATE")                               -- Получаем количество дней до экспирации
       if (param_day.result == "1") and (param_day.param_image ~= "")  and (param_day.param_type ~= "0") then -- Параметр получен корректно?
-            if tonumber(param_day.param_value) > 2 then                                                          -- Считаем только больше 2 дней
+            if tonumber(param_day.param_value) > 5 then                                                          -- Считаем только больше 2 дней
                 param_vol = tonumber(getParamEx(Class_code, Tab_sec_list[n],"VALTODAY").param_value)             -- Оборот в деньгах    
                 Limit_Holding = getFuturesHolding(Firmid, Trdaccid, Tab_sec_list[n], 0)                          -- Проверяем фьючерс на открытые позиции
                 if Limit_Holding ~= nil then
@@ -84,7 +84,7 @@ sec_list = getClassSecurities(Class_code)
     i = 0
     
     table.sort( Tabl, function ( a,b)  return(tonumber(a.val) > tonumber(b.val)) end )
-    for n = 1, 30 do
+    for n = 1, 50 do
         Tabl[n].buy_go     = tostring(getParamEx(Class_code, Tabl[n].fut,"BUYDEPO").param_value)        -- ГО покупателя
         Tabl[n].sell_go    = tostring(getParamEx(Class_code, Tabl[n].fut,"SELLDEPO").param_value)       -- ГО продавца
         Tabl[n].step       = tostring(getParamEx(Class_code, Tabl[n].fut,"SEC_PRICE_STEP").param_value) -- Мин. шаг цены
@@ -114,6 +114,7 @@ end
 
 -----------------------------------------------------------------------------------
 function MACD_(Sec_code, Interval)
+    message(Sec_code.."  "..tostring(Interval_D1))
     Ema_Fast = {}
     Ema_Slow = {}
     MACD = {}
@@ -163,13 +164,14 @@ function MACD_(Sec_code, Interval)
            Log(Str)
         end  
         SDiapazon = Delita_price/Candles                        -- Расчет среднедневного диапазона
+        return MACD, SDiapazon
     end
    
 end
 ------------------------------------------------------------------------------------------------------------
 function OnStop()                    -- Функция остановки бота по нажатию кнопки "Stop"
-    LogWrite("Остановка скрипта OnStop")
-    return 2000
+    Log("Остановка скрипта OnStop")
+    return 1000
 end
 -------------------------------------------------------------------------------------------------------------
 
@@ -183,4 +185,11 @@ function main()
          sleep(200)
     end
     MACD_("CNYRUBF",Interval_D1)
+    message(tostring(#MACD))
+    for i = 1, #MACD do
+        Str = tostring(MACD[i].data.day.." -дата и время".."\n"..
+        MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
+       Log(Str)
+    end
+    Log(SDiapazon)
 end
