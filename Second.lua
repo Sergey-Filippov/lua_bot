@@ -58,13 +58,11 @@ function Color(color, id, row, column)
     if color ==  "Зеленый"       then SetColor (id, row, column, RGB(034, 140, 034), RGB(000, 000, 000), RGB(034, 140, 034), RGB(000, 000, 000))  end
 end
 -------------------------------------------------------------------------------------
-function LastPrice(sec_code, class_code)         -- Функция считывает последние котировки с инструмента
+function LastPrice(Sec_code)         -- Функция считывает последние котировки с инструмента
     -------------------------------------------------------------------------------------
     
-        local Activ_price = tonumber(getParamEx(class_code, sec_code, "LAST").param_value)         -- Цена последней сделки
-        if Activ_price == nil then 
-            Activ_price = tonumber(getParamEx(class_code, sec_code, "PREVPRICE").param_value)       -- Цена закрытия    
-        end
+        local Activ_price = getParamEx(Class_code, Sec_code, "LAST").param_value  or  
+        getParamEx(Class_code, Sec_code, "PREVPRICE").param_value 
         return Activ_price    
     end
 
@@ -96,7 +94,7 @@ sec_list = getClassSecurities(Class_code)
     for n = 1, #Tab_sec_list do
         param_day = getParamEx(Class_code, Tab_sec_list[n],"DAYS_TO_MAT_DATE")                               -- Получаем количество дней до экспирации
       if (param_day.result == "1") and (param_day.param_image ~= "")  and (param_day.param_type ~= "0") then -- Параметр получен корректно?
-            if tonumber(param_day.param_value) > 5 then                                                          -- Считаем только больше 2 дней
+            if tonumber(param_day.param_value) > 5 then                                                          -- Считаем только больше 5 дней
                 param_vol = tonumber(getParamEx(Class_code, Tab_sec_list[n],"VALTODAY").param_value)             -- Оборот в деньгах    
                 Limit_Holding = getFuturesHolding(Firmid, Trdaccid, Tab_sec_list[n], 0)                          -- Проверяем фьючерс на открытые позиции
                 if Limit_Holding ~= nil then
@@ -123,8 +121,7 @@ sec_list = getClassSecurities(Class_code)
         Tabl[n].step       = tostring(getParamEx(Class_code, Tabl[n].fut,"SEC_PRICE_STEP").param_value) -- Мин. шаг цены
         Tabl[n].step_price = tostring(getParamEx(Class_code, Tabl[n].fut,"STEPPRICE").param_value)      -- Цена шага цены
         Tabl[n].lotsize    = tostring(getParamEx(Class_code, Tabl[n].fut,"LOTSIZE").param_valuee)       -- Размер лота
-        Tabl[n].last_price = getParamEx(Class_code, Tabl[n].fut, "LAST").param_value  or  
-            getParamEx(Class_code, Tabl[n].fut, "PREVPRICE").param_value                                -- Последняя цена
+        Tabl[n].last_price = LastPrice(Tabl[n].fut)                                -- Последняя цена
 
         TABLE = getBuySellInfo (Firmid, Client_code, Class_code, Tabl[n].fut, tonumber(Tabl[n].last_price)) 
        
