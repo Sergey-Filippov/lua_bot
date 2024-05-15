@@ -33,8 +33,40 @@ function Status() --Функция проверки состояния подключения
      
 end
 
+--[[ функция раскраски ячеек/строк где функция Color(color, id, row, column) возвращает
+color - название цвета (например : "Голубой") id - имя таблицы
+row и column - строка и столбец указывающие на конкретную ячейку таблицы, которую раскрашиваем
+]]--
+function Color(color, id, row, column)  
 
-
+    if not column then column = QTABLE_NO_INDEX end        -- Если индекс столбца не указан окрашивает всю строку
+   
+    if color ==  "Красный шрифт" then SetColor (id, row, column, RGB(255, 255, 255), RGB(255, 000, 000), RGB(255, 255, 255), RGB(255, 000, 000))  end
+    if color ==  "Синий шрифт"   then SetColor (id, row, column, RGB(255, 255, 255), RGB(000, 000, 255), RGB(255, 255, 255), RGB(000, 000, 255))  end
+    if color ==  "Лайм шрифт"    then SetColor (id, row, column, RGB(255, 255, 255), RGB(000, 255, 000), RGB(255, 255, 255), RGB(000, 255, 000))  end
+    if color ==  "Голубой"       then SetColor (id, row, column, RGB(173, 216, 230), RGB(000, 000, 000), RGB(173, 216, 230), RGB(000, 000, 000))  end  
+    if color ==  "Жёлтый"        then SetColor (id, row, column, RGB(255, 255, 000), RGB(000, 000, 000), RGB(255, 255, 000), RGB(000, 000, 000))  end
+    if color ==  "Серый"         then SetColor (id, row, column, RGB(128, 128, 128), RGB(000, 000, 000), RGB(128, 128, 128), RGB(000, 000, 000))  end
+    if color ==  "Темносерый"    then SetColor (id, row, column, RGB(050, 080, 080), RGB(000, 000, 000), RGB(050, 080, 080), RGB(000, 000, 000))  end
+    if color ==  "Синий"         then SetColor (id, row, column, RGB(000, 000, 255), RGB(000, 000, 000), RGB(000, 000, 255), RGB(000, 000, 000))  end
+    if color ==  "Оранжевый"     then SetColor (id, row, column, RGB(255, 165, 000), RGB(000, 000, 000), RGB(255, 165, 000), RGB(000, 000, 000))  end
+    if color ==  "Лайм"          then SetColor (id, row, column, RGB(000, 255, 000), RGB(000, 000, 000), RGB(000, 255, 000), RGB(000, 000, 000))  end
+    if color ==  "Красный"       then SetColor (id, row, column, RGB(255, 000, 000), RGB(000, 000, 000), RGB(255, 000, 000), RGB(000, 000, 000))  end
+    if color ==  "Фуксия"        then SetColor (id, row, column, RGB(255, 000, 255), RGB(000, 000, 000), RGB(255, 000, 255), RGB(000, 000, 000))  end
+    if color ==  "Кровь"         then SetColor (id, row, column, RGB(130, 000, 000), RGB(000, 000, 000), RGB(130, 000, 000), RGB(000, 000, 000))  end
+    if color ==  "Аква"          then SetColor (id, row, column, RGB(000, 255, 255), RGB(000, 000, 000), RGB(000, 255, 255), RGB(000, 000, 000))  end
+    if color ==  "Зеленый"       then SetColor (id, row, column, RGB(034, 140, 034), RGB(000, 000, 000), RGB(034, 140, 034), RGB(000, 000, 000))  end
+end
+-------------------------------------------------------------------------------------
+function LastPrice(sec_code, class_code)         -- Функция считывает последние котировки с инструмента
+    -------------------------------------------------------------------------------------
+    
+        local Activ_price = tonumber(getParamEx(class_code, sec_code, "LAST").param_value)         -- Цена последней сделки
+        if Activ_price == nil then 
+            Activ_price = tonumber(getParamEx(class_code, sec_code, "PREVPRICE").param_value)       -- Цена закрытия    
+        end
+        return Activ_price    
+    end
 
 -------------------------------------------------------------------------------------
 function Log(str)                               -- Запись логов работы 
@@ -177,7 +209,7 @@ function main()
          "\n".." Возможно купить или продать контрактов ".. Tabl_sort[i].can_buy_sell ) 
          sleep(200)
     end
-    MACD_("CNYRUBF", Interval_D1)
+   if Tabl_sort ~= nil then MACD_(Tabl_sort[1].fut, Interval_D1) end
   
     for i = 1, #MACD do
         Str = tostring(MACD[i].data.." -дата и время".."\n"..
