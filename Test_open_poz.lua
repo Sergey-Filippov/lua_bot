@@ -8,7 +8,8 @@ Interval_D1 = 1440                            -- Дневной интервал
 Period_Slow = 26                                -- Период сглаживания медленной EMA
 Period_Fast = 12                                 -- Период сглаживания быстрой EMA
 SDiapazon = 0   
-Sec_code = "VBM4"   
+Sec_code = "VBM4"
+--Sec_code = "CNYRUBF"   
 log =  getScriptPath().."\\".."Log_one.txt"        -- Файл записи логов работы 
 MACD = {}
 
@@ -111,10 +112,13 @@ function MACD_(Sec_code, Interval)
   SDiapazon = Delita_price/(Candles-1)                       -- Расчет среднедневного диапазона
   local S = tostring(LastPrice(Sec_code)*10/10)
   local len = #S
+  local poz = string.find(S, "%D" )
+  if tonumber(string.sub(S, poz+1, len)) ~= 0 then
+  len = #string.sub(S, poz+1, len)
+  SDiapazon = (SDiapazon*10^len) + 0.5
+  end
+  SDiapazon = math.floor( SDiapazon)
   
-  --SDiapazon = math.floor(SDiapazon * 10^len)
-  message(tostring(S.."  "..len))
-  message(tostring(string.find(S, "%D" )))
   return MACD, SDiapazon
 end
 
