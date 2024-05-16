@@ -188,6 +188,11 @@ function MACD_(Sec_code, Interval)
     
     end
     SDiapazon = Delita_price/(Candles-1)                       -- Расчет среднедневного диапазона
+   -- local len = #tostring(LastPrice(Sec_code)) - string.find( tostring(LastPrice(Sec_code)),"," )
+    --SDiapazon = math.floor(SDiapazon * 10^len)
+    message(tostring(LastPrice(Sec_code)))
+    message(tostring(#tostring(LastPrice(Sec_code)*10/10)))
+    message(tostring(string.find(tostring(LastPrice(Sec_code)),"." )))
     return MACD, SDiapazon
 end
 ------------------------------------------------------------------------------------------------------------
