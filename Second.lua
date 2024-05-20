@@ -1,6 +1,7 @@
 ----  Простой робот по индикаторам тех анализа  ----
------------------------------------------------
+------------------------------------------------------------------
 function OnInit()  -- Первичная инициализация данных
+------------------------------------------------------------------    
     Name_Bot = "Бот на скользящих средних"          -- Наименование робота
     Version = " 1.0"                                -- Номер версии бота
     Sec_code = ""                                   -- Наименование торгового тнструмента
@@ -25,14 +26,15 @@ function OnInit()  -- Первичная инициализация данных
     Tabl_sort = {}                                      -- Отсортированная таблица данных
     MACD = {}
 end
-
+----------------------------------------------------------------------------------------------------
 function Status() --Функция проверки состояния подключения 
+----------------------------------------------------------------------------------------------------    
     local connect = tostring(math.ceil( isConnected() ))
     local status = tostring(math.ceil(getParamEx(Class_code, Sec_code, "STAtUS").param_value) or 0)
     local session_status = tostring(math.ceil(getFuturesHolding(Firmid,Trdaccid,Sec_code, 0).session_status) or 0)
      
 end
-
+------------------------------------------------------------------------------------------------------------
 --[[ функция раскраски ячеек/строк где функция Color(color, id, row, column) возвращает
 color - название цвета (например : "Голубой") id - имя таблицы
 row и column - строка и столбец указывающие на конкретную ячейку таблицы, которую раскрашиваем
@@ -57,13 +59,13 @@ function Color(color, id, row, column)
     if color ==  "Аква"          then SetColor (id, row, column, RGB(000, 255, 255), RGB(000, 000, 000), RGB(000, 255, 255), RGB(000, 000, 000))  end
     if color ==  "Зеленый"       then SetColor (id, row, column, RGB(034, 140, 034), RGB(000, 000, 000), RGB(034, 140, 034), RGB(000, 000, 000))  end
 end
--------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
 function LastPrice(Sec_code)         -- Функция считывает последние котировки с инструмента
     -------------------------------------------------------------------------------------
     
         local Activ_price = getParamEx(Class_code, Sec_code, "LAST").param_value  or  
         getParamEx(Class_code, Sec_code, "PREVPRICE").param_value 
-        return Activ_price    
+        return Activ_price                                          -- Возвращает или последнюю котировку на сегодня или последнюю котировку предыдущего дня
     end
 
 -------------------------------------------------------------------------------------
@@ -76,8 +78,8 @@ function Log(str)                               -- Запись логов работы
        lg:close()      
 end
 --------------------------------------------------------------------------------------
-function Sortirovka_selection()
-
+function Sortirovka_selection() -- Функция получает данные по фьючерсам и сортирует их на основе дипозита и оборота в деньгах
+--------------------------------------------------------------------------------------
 sec_list = getClassSecurities(Class_code)
 
     Tab_sec_list = {}                                   -- Получение всех котируемых фьючерсов на данном классе
@@ -98,9 +100,9 @@ sec_list = getClassSecurities(Class_code)
                 param_vol = tonumber(getParamEx(Class_code, Tab_sec_list[n],"VALTODAY").param_value)             -- Оборот в деньгах    
                 Limit_Holding = getFuturesHolding(Firmid, Trdaccid, Tab_sec_list[n], 0)                          -- Проверяем фьючерс на открытые позиции
                 if Limit_Holding ~= nil then
-                  Open_poz = Open_poz + Limit_Holding.totalnet
+                  Open_poz = Open_poz + Limit_Holding.totalnet                                                   -- Считаем количество открытых позиций по фьючерсам
                 end
-                if param_vol  then 
+                if param_vol  then                                          -- если оборот в деньгах получен то записываем в таблицу:
 
                     i = i + 1
                     Tabl[i] = {}
@@ -114,8 +116,8 @@ sec_list = getClassSecurities(Class_code)
     -- == Сортируем по обороту в деньгах и оставляем только первые 30 инструментов и записываем их в Таблицу == --
     i = 0
     
-    table.sort( Tabl, function ( a,b)  return(tonumber(a.val) > tonumber(b.val)) end )
-    for n = 1, 50 do
+    table.sort( Tabl, function ( a,b)  return(tonumber(a.val) > tonumber(b.val)) end )      -- Функция сортировки по обороту
+    for n = 1, 50 do                                                                        -- оставляем первые 50 фьючерсов и получаем по ним остальные данные
         Tabl[n].buy_go     = tostring(getParamEx(Class_code, Tabl[n].fut,"BUYDEPO").param_value)        -- ГО покупателя
         Tabl[n].sell_go    = tostring(getParamEx(Class_code, Tabl[n].fut,"SELLDEPO").param_value)       -- ГО продавца
         Tabl[n].step       = tostring(getParamEx(Class_code, Tabl[n].fut,"SEC_PRICE_STEP").param_value) -- Мин. шаг цены
@@ -125,17 +127,17 @@ sec_list = getClassSecurities(Class_code)
 
         TABLE = getBuySellInfo (Firmid, Client_code, Class_code, Tabl[n].fut, tonumber(Tabl[n].last_price)) 
        
-        if  math.floor((tonumber(TABLE.can_sell) + tonumber(TABLE.can_buy))/2) >= Risk and 
-        Depo /(tonumber(Tabl[n].sell_go) + tonumber(Tabl[n].buy_go))  >= Risk  then
+        if  math.floor((tonumber(TABLE.can_sell) + tonumber(TABLE.can_buy))/2) >= 1  and        -- Если мы можем продать или купить больше 1 контракта
+        Depo /(tonumber(Tabl[n].sell_go) + tonumber(Tabl[n].buy_go))  >= 1  then                -- И нашего депо хватит для двойного обеспечения то:
 
             i = i + 1
-            Tabl_sort[i] = Tabl[n] 
-            Tabl_sort[i].can_buy_sell = math.floor((tonumber(TABLE.can_sell) + tonumber(TABLE.can_buy))/2)
-        end
+            Tabl_sort[i] = Tabl[n]                                                              -- Мы данные записываем в новую таблицу
+            Tabl_sort[i].can_buy_sell = math.floor((tonumber(TABLE.can_sell) + tonumber(TABLE.can_buy))/2)  -- Добавляя количество доступных для покупки или
+        end                                                                                                 -- продажи контрактов
     end  
     Tabl = nil                                              -- Удаляем ненужную таблицу
     
-     if  Tabl_sort == nil  then
+     if  Tabl_sort == nil  then                             -- Если в таблицу ничего не записалось - значет мало денег на депо
       message("Вашего депозита не хватает для работы робота, пополните депозит")
      end
     return Tabl_sort
@@ -165,12 +167,12 @@ function MACD_(Sec_code, Interval)
     
     Ema_Slow[1] = DS:C(1) 
     Ema_Fast[1] = DS:C(1)
-    local A_Fast = 2/(Period_Fast+1)
-    local A_Slow = 2/(Period_Slow+1)
+    local A_Fast = 2/(Period_Fast+1)        -- коэф сглаживания для быстрой скользящей
+    local A_Slow = 2/(Period_Slow+1)        -- коэф сглаживания для медленной скользящей
     for i = 2, Candles do
         Highprice = DS:H(i)                   -- High
         Lowprice = DS:L(i)                    -- Low
-        Data = DS:T(i)
+        Data = DS:T(i)                        -- дата и время
             Ema_Slow[i] = DS:C(i)
             Ema_Fast[i] = DS:C(i)
           
@@ -181,21 +183,28 @@ function MACD_(Sec_code, Interval)
         if Index >=1 then                                               --  Оставляем в памяти последние 22 значения
             MACD[Index] = {}
             MACD[Index].macd = tonumber(string.format("%.6f", (Ema_Fast[i] - Ema_Slow[i])))       -- Расчет MACD
-            MACD[Index].slow = tonumber(string.format("%.6f", Ema_Slow[i] ))
-            MACD[Index].fast = tonumber(string.format("%.6f", Ema_Fast[i] ))
-            MACD[Index].data = tostring(Data.day..' число '..Data.month.." мес ")
+            MACD[Index].slow = tonumber(string.format("%.6f", Ema_Slow[i] ))                      -- Сохраняем значение медленной скользящей
+            MACD[Index].fast = tonumber(string.format("%.6f", Ema_Fast[i] ))                      -- Сохраняем значение быстрой скользящей
+            if Interval == Interval_D1 then
+                MACD[Index].day = tostring(Data.day..' число ')                                   -- Сохраняем число и месяц для Interval= день
+                MACD[Index].month =tostring(Data.month.." мес ")
+            else
+                MACD[Index].day = tostring(Data.day..' число ')
+                MACD[Index].hour = tostring(Data.hour.." час ")                                    -- Сохраняем число, час и мин для другого интервала
+                MACD[Index].min = tostring(Data.min.." мин")
+            end
         end  
     
     end
     SDiapazon = Delita_price/(Candles-1)                       -- Расчет среднедневного диапазона
-  local S = tostring(LastPrice(Sec_code)*10/10)
-  local len = #S
-  local poz = string.find(S, "%D" )
-  if tonumber(string.sub(S, poz+1, len)) ~= 0 then
-  len = #string.sub(S, poz+1, len)
-  SDiapazon = (SDiapazon*10^len) + 0.5
-  end
-  SDiapazon = math.floor( SDiapazon)
+    local S = tostring(LastPrice(Sec_code)*10/10)               -- Узнаём последнюю цену инструмента и удаляем лишние нули
+    local len = #S                                              -- Длинна полученной строки
+    local poz = string.find(S, "%D" )                           -- находим позицию точки или запятой
+    if tonumber(string.sub(S, poz+1, len)) ~= 0 then            -- Если после запятой не одни нули, то
+    len = #string.sub(S, poz+1, len)                            -- получаем подстроку от запятой до последнего знака
+    SDiapazon = (SDiapazon*10^len) + 0.5                        -- получаем средний диапазон в пунктах с округлением
+    end
+    SDiapazon = math.floor( SDiapazon)                          -- если после запятой одни нули, просто отбрасываем их
     return MACD, SDiapazon
 end
 ------------------------------------------------------------------------------------------------------------
@@ -217,8 +226,8 @@ function main()
    if Tabl_sort ~= nil then MACD_(Tabl_sort[1].fut, Interval_D1) end
   
     for i = 1, #MACD do
-        Str = tostring(MACD[i].data.." -дата и время".."\n"..
-        MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
+        Str = tostring(MACD[i].day.."."..MACD[i].month.." -дата и время".."\n"..
+       MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
        Log(Str)
     end
     Log(SDiapazon)
