@@ -221,42 +221,56 @@ function First_Table ()      -- Функция создает таблицу
     SetWindowCaption (t_id, "ВЫБЕРЕТЕ ФЬЮЧЕРС ДЛЯ РАБОТЫ РОБОТА")       -- Устанавливает заголовок
     SetWindowPos (t_id, 0, 0, 593, 120)                 -- Задает положение и размер окна 0,0 - начало x,y - конец окна 
 ----------------------------------------------------------------------------------------
+    
     for m = 1, #Tabl_sort do
         InsertRow(t_id, -1)
-     
-    ----=== m-я строка ===----
-    SetCell (t_id, m, 1, tostring(Tabl_sort[m].fut));               Color ('Голубой', t_id, m, 1)
-    SetCell (t_id, m, 2, tostring(Tabl_sort[m].can_buy_sell));    Color ('Голубой', t_id, m, 2)
-    SetCell (t_id, m, 3, tostring(Tabl_sort[m].val));               Color ('Голубой', t_id, m, 3)
-    SetCell (t_id, m, 4, tostring(Tabl_sort[m].step));              Color ('Голубой', t_id, m, 4)
-    SetCell (t_id, m, 5, tostring(Tabl_sort[m].step_price));        Color ('Голубой', t_id, m, 5)
+    if math.fmod( m,2 ) == 0 then
+        Color ("Голубой", t_id, m, 1)
+        Color ("Голубой", t_id, m, 2)
+        Color ("Голубой", t_id, m, 3)
+        Color ("Голубой", t_id, m, 4)
+        Color ("Голубой", t_id, m, 5) 
+        else 
+        Color ("Аква", t_id, m, 1)
+        Color ("Аква", t_id, m, 2)
+        Color ("Аква", t_id, m, 3)
+        Color ("Аква", t_id, m, 4)
+        Color ("Аква", t_id, m, 5)  
+        end
+    
+    SetCell (t_id, m, 1, tostring(Tabl_sort[m].fut));             
+    SetCell (t_id, m, 2, tostring(Tabl_sort[m].can_buy_sell));    
+    SetCell (t_id, m, 3, tostring(Tabl_sort[m].val));             
+    SetCell (t_id, m, 4, tostring(Tabl_sort[m].step));            
+    SetCell (t_id, m, 5, tostring(Tabl_sort[m].step_price));      
     
     end 
 
-    --SetTableNotificationCallback (t_id, TableMessage)               -- Функция реагирует на мышь
+    --SetTableNotificationCallback (t_id, Table_Callback)               -- Функция реагирует на мышь
 
 end   
 ------------------------------------------------------------------------------------------------------------
 function OnStop()                    -- Функция остановки бота по нажатию кнопки "Stop"
     Log("Остановка скрипта OnStop")
+    DestroyTable(t_id)
+    is_run = false
     return 1000
 end
 -------------------------------------------------------------------------------------------------------------
 
 function main()
     Sortirovka_selection()
-    Log("Простой")
    
     for i = 1, #Tabl_sort do
+
          Log(Tabl_sort[i].fut.." Фьючерс "..Tabl_sort[i].val.." Оборот в деньгах "..Tabl_sort[i].buy_go.." -Го на покупку"..Tabl_sort[i].sell_go.." -Го на продажу"..
          "\n".." Возможно купить или продать контрактов ".. Tabl_sort[i].can_buy_sell ) 
-         sleep(200)
     end
     
    if Tabl_sort ~= nil then MACD_(Tabl_sort[1].fut, Interval_D1) end
    First_Table ()
     for i = 1, #MACD do
-        Str = tostring(MACD[i].day.."."..MACD[i].month.." -дата и время".."\n"..
+        Str = tostring(MACD[i].day.." "..MACD[i].month.." -дата и время".."\n"..
        MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
        Log(Str)
     end
