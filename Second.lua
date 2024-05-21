@@ -246,9 +246,16 @@ function First_Table ()      -- Функция создает таблицу
     
     end 
 
-    --SetTableNotificationCallback (t_id, Table_Callback)               -- Функция реагирует на мышь
-
+    SetTableNotificationCallback (t_id, Table_Callback)               -- Функция реагирует на мышь
 end   
+------------------------------------------------------------------------------------------------------------
+function Table_Callback(t_id, msg, row, col)
+    while msg == nil do
+        if msg == QTABLE_CLOSE then OnStop() end
+        if msg == QTABLE_LBUTTONDOWN then Sec_code = Tabl_sort[row].fut end
+    end
+    return Sec_code
+  end
 ------------------------------------------------------------------------------------------------------------
 function OnStop()                    -- Функция остановки бота по нажатию кнопки "Stop"
     Log("Остановка скрипта OnStop")
@@ -267,8 +274,10 @@ function main()
          "\n".." Возможно купить или продать контрактов ".. Tabl_sort[i].can_buy_sell ) 
     end
     
-   if Tabl_sort ~= nil then MACD_(Tabl_sort[1].fut, Interval_D1) end
+   
    First_Table ()
+ 
+   if Tabl_sort ~= nil then MACD_(Sec_code, Interval_D1) end
     for i = 1, #MACD do
         Str = tostring(MACD[i].day.." "..MACD[i].month.." -дата и время".."\n"..
        MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
