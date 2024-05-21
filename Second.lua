@@ -207,6 +207,35 @@ function MACD_(Sec_code, Interval)
     SDiapazon = math.floor( SDiapazon)                          -- если после запятой одни нули, просто отбрасываем их
     return MACD, SDiapazon
 end
+-----------------------------------------------------------------------------------------------------------
+function First_Table ()      -- Функция создает таблицу
+    t_id = AllocTable ()     -- Получает доступный id для создания
+----------------------------------------------------------------------------------------
+    AddColumn (t_id, 1, "Тикер", true, QTABLE_INT_TYPE, 12)
+    AddColumn (t_id, 2, "Кол-во доступных контрактов",   true, QTABLE_INT_TYPE, 37)
+    AddColumn (t_id, 3, "Оборот в деньгах",  true, QTABLE_INT_TYPE, 22)
+    AddColumn (t_id, 4, "Мин. шаг цены",  true, QTABLE_INT_TYPE, 20)
+    AddColumn (t_id, 5, "Цена шага",  true, QTABLE_INT_TYPE, 17)
+
+    CreateWindow (t_id)                                 -- Создаёт таблицу
+    SetWindowCaption (t_id, "ВЫБЕРЕТЕ ФЬЮЧЕРС ДЛЯ РАБОТЫ РОБОТА")       -- Устанавливает заголовок
+    SetWindowPos (t_id, 0, 0, 593, 120)                 -- Задает положение и размер окна 0,0 - начало x,y - конец окна 
+----------------------------------------------------------------------------------------
+    for m = 1, #Tabl_sort do
+        InsertRow(t_id, -1)
+     
+    ----=== m-я строка ===----
+    SetCell (t_id, m, 1, tostring(Tabl_sort[m].fut));               Color ('Голубой', t_id, m, 1)
+    SetCell (t_id, m, 2, tostring(Tabl_sort[m].can_buy_sell));    Color ('Голубой', t_id, m, 2)
+    SetCell (t_id, m, 3, tostring(Tabl_sort[m].val));               Color ('Голубой', t_id, m, 3)
+    SetCell (t_id, m, 4, tostring(Tabl_sort[m].step));              Color ('Голубой', t_id, m, 4)
+    SetCell (t_id, m, 5, tostring(Tabl_sort[m].step_price));        Color ('Голубой', t_id, m, 5)
+    
+    end 
+
+    --SetTableNotificationCallback (t_id, TableMessage)               -- Функция реагирует на мышь
+
+end   
 ------------------------------------------------------------------------------------------------------------
 function OnStop()                    -- Функция остановки бота по нажатию кнопки "Stop"
     Log("Остановка скрипта OnStop")
@@ -223,8 +252,9 @@ function main()
          "\n".." Возможно купить или продать контрактов ".. Tabl_sort[i].can_buy_sell ) 
          sleep(200)
     end
+    
    if Tabl_sort ~= nil then MACD_(Tabl_sort[1].fut, Interval_D1) end
-  
+   First_Table ()
     for i = 1, #MACD do
         Str = tostring(MACD[i].day.."."..MACD[i].month.." -дата и время".."\n"..
        MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
