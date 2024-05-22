@@ -82,7 +82,9 @@ end
 function Sortirovka_selection() -- Функция получает данные по фьючерсам и сортирует их на основе дипозита и оборота в деньгах
 --------------------------------------------------------------------------------------
     sec_list = getClassSecurities(Class_code)
-   
+   while sec_list == nil do
+    sleep (1000)
+   end
 
     Tab_sec_list = {}                                   -- Получение всех котируемых фьючерсов на данном классе
     Tabl = {}
@@ -93,10 +95,7 @@ function Sortirovka_selection() -- Функция получает данные по фьючерсам и сортир
         Tab_sec_list[i] = tostring(msec)
       end
     end
-    if Tab_sec_list == nill then 
-        message("Данные не получены")
-        OnStop()
-    end
+   
     i = 0
     for n = 1, #Tab_sec_list do
         param_day = getParamEx(Class_code, Tab_sec_list[n],"DAYS_TO_MAT_DATE")                               -- Получаем количество дней до экспирации
@@ -154,12 +153,9 @@ function MACD_(Sec_code, Interval)
     Ema_Fast = {}
     Ema_Slow = {}
     DS, Error = CreateDataSource(Class_code, Sec_code, Interval)          -- Получение таблицы данных по D1
-    while (DS:Size() == nil or DS:Size() == 0) do                 -- Проверка получены ли данные
-       if Error ~= nil or Error ~="" then 
-        message("Ошибка подключения к графику: "..Error) 
-        break end
+    while (DS == nil or DS:Size() == 0 or Error ~= nil) do                 -- Проверка получены ли данные
      
-          sleep(100)
+          sleep(1000)
         end
     
     if DS ~= nil then message(" Данные получены") end
@@ -289,13 +285,14 @@ function main()
     
    
    First_Table ()
-  if Sec_code ~= "" then  DestroyTable(t_id )end
+  if Sec_code ~= "" then  sleep (500) DestroyTable(t_id )end
     message("Откройте график фьючерса: "..Sec_code)
-  --[[ if Tabl_sort ~= nil then MACD_(Sec_code, Interval_D1) end
+    sleep(1000)
+   if Tabl_sort ~= nil and Sec_code ~= "" then MACD_(Sec_code, Interval_D1) end
     for i = 1, #MACD do
         Str = tostring(MACD[i].day.." "..MACD[i].month.." -дата и время".."\n"..
        MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
        Log(Str)
     end
-    Log(SDiapazon)]]
+    Log(SDiapazon.." "..Sec_code)
 end
