@@ -22,6 +22,7 @@ function OnInit()  -- Первичная инициализация данных
     SDiapazon_H4 = 0                 
     Risk = 2
     Open_poz = 0                                        -- открытые позиции 
+    is_run = true
     log =  getScriptPath().."\\".."Save_one.txt"        -- Файл записи логов работы
     Tabl_sort = {}                                      -- Отсортированная таблица данных
     MACD = {}
@@ -80,7 +81,8 @@ end
 --------------------------------------------------------------------------------------
 function Sortirovka_selection() -- Функция получает данные по фьючерсам и сортирует их на основе дипозита и оборота в деньгах
 --------------------------------------------------------------------------------------
-sec_list = getClassSecurities(Class_code)
+    sec_list = getClassSecurities(Class_code)
+   
 
     Tab_sec_list = {}                                   -- Получение всех котируемых фьючерсов на данном классе
     Tabl = {}
@@ -91,7 +93,10 @@ sec_list = getClassSecurities(Class_code)
         Tab_sec_list[i] = tostring(msec)
       end
     end
-  
+    if Tab_sec_list == nill then 
+        message("Данные не получены")
+        OnStop()
+    end
     i = 0
     for n = 1, #Tab_sec_list do
         param_day = getParamEx(Class_code, Tab_sec_list[n],"DAYS_TO_MAT_DATE")                               -- Получаем количество дней до экспирации
@@ -219,41 +224,49 @@ function First_Table ()      -- Функция создает таблицу
 
     CreateWindow (t_id)                                 -- Создаёт таблицу
     SetWindowCaption (t_id, "ВЫБЕРЕТЕ ФЬЮЧЕРС ДЛЯ РАБОТЫ РОБОТА")       -- Устанавливает заголовок
-    SetWindowPos (t_id, 0, 0, 593, 120)                 -- Задает положение и размер окна 0,0 - начало x,y - конец окна 
+    SetWindowPos (t_id, 0, 0, 610, 145)                 -- Задает положение и размер окна 0,0 - начало x,y - конец окна 
 ----------------------------------------------------------------------------------------
-    
+    SetTableNotificationCallback (t_id, Table_Callback)               -- Функция реагирует на мышь
     for m = 1, #Tabl_sort do
         InsertRow(t_id, -1)
-    if math.fmod( m,2 ) == 0 then
-        Color ("Голубой", t_id, m, 1)
-        Color ("Голубой", t_id, m, 2)
-        Color ("Голубой", t_id, m, 3)
-        Color ("Голубой", t_id, m, 4)
-        Color ("Голубой", t_id, m, 5) 
-        else 
-        Color ("Аква", t_id, m, 1)
-        Color ("Аква", t_id, m, 2)
-        Color ("Аква", t_id, m, 3)
-        Color ("Аква", t_id, m, 4)
-        Color ("Аква", t_id, m, 5)  
+        if math.fmod( m,2 ) == 0 then
+            Color ("Голубой", t_id, m, 1)
+            Color ("Голубой", t_id, m, 2)
+            Color ("Голубой", t_id, m, 3)
+            Color ("Голубой", t_id, m, 4)
+            Color ("Голубой", t_id, m, 5) 
+            else 
+            Color ("Аква", t_id, m, 1)
+            Color ("Аква", t_id, m, 2)
+            Color ("Аква", t_id, m, 3)
+            Color ("Аква", t_id, m, 4)
+            Color ("Аква", t_id, m, 5)  
         end
-    
-    SetCell (t_id, m, 1, tostring(Tabl_sort[m].fut));             
-    SetCell (t_id, m, 2, tostring(Tabl_sort[m].can_buy_sell));    
-    SetCell (t_id, m, 3, tostring(Tabl_sort[m].val));             
-    SetCell (t_id, m, 4, tostring(Tabl_sort[m].step));            
-    SetCell (t_id, m, 5, tostring(Tabl_sort[m].step_price));      
+
+        SetCell (t_id, m, 1, tostring(Tabl_sort[m].fut));             
+        SetCell (t_id, m, 2, tostring(Tabl_sort[m].can_buy_sell));    
+        SetCell (t_id, m, 3, tostring(Tabl_sort[m].val));             
+        SetCell (t_id, m, 4, tostring(Tabl_sort[m].step));            
+        SetCell (t_id, m, 5, tostring(Tabl_sort[m].step_price));      
     
     end 
 
-    SetTableNotificationCallback (t_id, Table_Callback)               -- Функция реагирует на мышь
+    
+    while is_run == true do
+    
+        sleep(100)
+    end 
 end   
 ------------------------------------------------------------------------------------------------------------
 function Table_Callback(t_id, msg, row, col)
-    while msg == nil do
+   
         if msg == QTABLE_CLOSE then OnStop() end
-        if msg == QTABLE_LBUTTONDOWN then Sec_code = Tabl_sort[row].fut end
-    end
+        if (msg == QTABLE_RBUTTONDOWN or msg == QTABLE_LBUTTONDOWN) and row ~= 0 then 
+            Sec_code =Tabl_sort[row].fut
+            is_run = false
+            
+        end
+    
     return Sec_code
   end
 ------------------------------------------------------------------------------------------------------------
@@ -267,7 +280,7 @@ end
 
 function main()
     Sortirovka_selection()
-   
+   Log("\n")
     for i = 1, #Tabl_sort do
 
          Log(Tabl_sort[i].fut.." Фьючерс "..Tabl_sort[i].val.." Оборот в деньгах "..Tabl_sort[i].buy_go.." -Го на покупку"..Tabl_sort[i].sell_go.." -Го на продажу"..
@@ -276,12 +289,13 @@ function main()
     
    
    First_Table ()
- 
-   if Tabl_sort ~= nil then MACD_(Sec_code, Interval_D1) end
+  if Sec_code ~= "" then  DestroyTable(t_id )end
+    message("Откройте график фьючерса: "..Sec_code)
+  --[[ if Tabl_sort ~= nil then MACD_(Sec_code, Interval_D1) end
     for i = 1, #MACD do
         Str = tostring(MACD[i].day.." "..MACD[i].month.." -дата и время".."\n"..
        MACD[i].macd.." - MACD  "..MACD[i].fast.." - fast  "..MACD[i].slow.." - slow")
        Log(Str)
     end
-    Log(SDiapazon)
+    Log(SDiapazon)]]
 end
