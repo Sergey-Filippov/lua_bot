@@ -129,7 +129,7 @@ function Sortirovka_selection() -- Функция получает данные по фьючерсам и сортир
         Tabl[n].lotsize    = tostring(getParamEx(Class_code, Tabl[n].fut,"LOTSIZE").param_valuee)       -- Размер лота
         Tabl[n].last_price = LastPrice(Tabl[n].fut)                                -- Последняя цена
 
-        TABLE = getBuySellInfo (Firmid, Client_code, Class_code, Tabl[n].fut, tonumber(Tabl[n].last_price)) 
+        TABLE = Buy_Sell_vol(Tabl[n].fut, tonumber(Tabl[n].last_price))
        
         if  math.floor((tonumber(TABLE.can_sell) + tonumber(TABLE.can_buy))/2) >= 1  and        -- Если мы можем продать или купить больше 1 контракта
         Depo /(tonumber(Tabl[n].sell_go) + tonumber(Tabl[n].buy_go))  >= 1  then                -- И нашего депо хватит для двойного обеспечения то:
@@ -146,7 +146,11 @@ function Sortirovka_selection() -- Функция получает данные по фьючерсам и сортир
      end
     return Tabl_sort
 end
-
+-----------------------------------------------------------------------------------
+function Buy_Sell_vol(future, price)
+    Tab = getBuySellInfo (Firmid, Client_code, Class_code, Tabl[n].fut, tonumber(Tabl[n].last_price)) 
+    return Tab
+end
 -----------------------------------------------------------------------------------
 function MACD_(Sec_code, Interval)
    
