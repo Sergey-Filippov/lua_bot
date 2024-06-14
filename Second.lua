@@ -148,7 +148,7 @@ function Sortirovka_selection() -- Функция получает данные по фьючерсам и сортир
 end
 -----------------------------------------------------------------------------------
 function Buy_Sell_vol(future, price)
-    Tab = getBuySellInfo (Firmid, Client_code, Class_code, Tabl[n].fut, tonumber(Tabl[n].last_price)) 
+    Tab = getBuySellInfo (Firmid, Client_code, Class_code, future, price)
     return Tab
 end
 -----------------------------------------------------------------------------------
@@ -185,7 +185,7 @@ function MACD_(Sec_code, Interval)
             Ema_Fast[i] =  DS:C(i)*A_Fast + Ema_Fast[i-1]*(1 - A_Fast)    --Расчет быстрой EMA
             Delita_price = Delita_price + math.abs(Highprice -Lowprice)    -- Расчет суммы всех дневных диапазонов
             Index = (i + Period_Fast) - Candles
-        if Index >=1 then                                               --  Оставляем в памяти последние 22 значения
+        if Index >=1 then                                               --  Оставляем в памяти последние Period_Fast значения
             MACD[Index] = {}
             MACD[Index].macd = tonumber(string.format("%.6f", (Ema_Fast[i] - Ema_Slow[i])))       -- Расчет MACD
             MACD[Index].slow = tonumber(string.format("%.6f", Ema_Slow[i] ))                      -- Сохраняем значение медленной скользящей
@@ -215,6 +215,7 @@ end
 -----------------------------------------------------------------------------------------------------------
 function First_Table ()      -- Функция создает таблицу
     t_id = AllocTable ()     -- Получает доступный id для создания
+   local row = #Tabl_sort    -- Количествострок
 ----------------------------------------------------------------------------------------
     AddColumn (t_id, 1, "Тикер", true, QTABLE_INT_TYPE, 12)
     AddColumn (t_id, 2, "Кол-во доступных контрактов",   true, QTABLE_INT_TYPE, 37)
@@ -224,7 +225,7 @@ function First_Table ()      -- Функция создает таблицу
 
     CreateWindow (t_id)                                 -- Создаёт таблицу
     SetWindowCaption (t_id, "ВЫБЕРЕТЕ ФЬЮЧЕРС ДЛЯ РАБОТЫ РОБОТА")       -- Устанавливает заголовок
-    SetWindowPos (t_id, 0, 0, 610, 145)                 -- Задает положение и размер окна 0,0 - начало x,y - конец окна 
+    SetWindowPos (t_id, 0, 0, 610, (25*row))                 -- Задает положение и размер окна 0,0 - начало x,y - конец окна 
 ----------------------------------------------------------------------------------------
     SetTableNotificationCallback (t_id, Table_Callback)               -- Функция реагирует на мышь
     for m = 1, #Tabl_sort do
